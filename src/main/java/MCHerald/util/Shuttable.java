@@ -1,4 +1,4 @@
-package messenger.util;
+package MCHerald.util;
 
 public interface Shuttable {
     void shutdown();

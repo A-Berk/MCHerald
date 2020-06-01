@@ -1,8 +1,8 @@
-package messenger.ping;
+package MCHerald.ping;
 
-import messenger.MCHerald;
-import messenger.util.ServerInfo;
-import messenger.util.Shuttable;
+import MCHerald.MCHerald;
+import MCHerald.util.ServerInfo;
+import MCHerald.util.Shuttable;
 
 import java.util.*;
 

@@ -1,6 +1,6 @@
-package messenger.util;
+package MCHerald.util;
 
-import messenger.MCHerald;
+import MCHerald.MCHerald;
 
 import javax.swing.*;
 import java.awt.*;

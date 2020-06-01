@@ -1,10 +1,10 @@
-package messenger.gui;
+package MCHerald.gui;
 
-import messenger.MCHerald;
-import messenger.util.Constants;
-import messenger.util.GUI;
-import messenger.util.Language;
-import messenger.util.ServerInfo;
+import MCHerald.MCHerald;
+import MCHerald.util.Constants;
+import MCHerald.util.GUI;
+import MCHerald.util.Language;
+import MCHerald.util.ServerInfo;
 
 import javax.swing.*;
 import javax.swing.border.Border;

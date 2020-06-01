@@ -1,12 +1,12 @@
-package messenger;
+package MCHerald;
 
-import messenger.gui.AddServer;
-import messenger.gui.ServerTable;
-import messenger.gui.SystemTrayMenu;
-import messenger.util.Constants;
-import messenger.util.Language;
-import messenger.util.ServerInfo;
-import messenger.util.Shuttable;
+import MCHerald.gui.AddServer;
+import MCHerald.gui.ServerTable;
+import MCHerald.gui.SystemTrayMenu;
+import MCHerald.util.Constants;
+import MCHerald.util.Language;
+import MCHerald.util.ServerInfo;
+import MCHerald.util.Shuttable;
 
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
@@ -45,7 +45,7 @@ public class MCHerald implements Shuttable {
         this.serverTable = new ServerTable(this);
         this.addServer = new AddServer(this, serverTable);
 
-        this.addServer(new ServerInfo(this, "72.69.253.223", "Selig's Server", true, 1));
+        this.addServer(new ServerInfo(this, "72.69.253.223", "Minecraft Server", true, 1));
         //this.addServer(new ServerInfo(this, "play.mineville.org", "MineVille", true, 2));
     }
 

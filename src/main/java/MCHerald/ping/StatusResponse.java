@@ -1,4 +1,4 @@
-package messenger.ping;
+package MCHerald.ping;
 
 import java.util.List;
 

@@ -1,8 +1,8 @@
-package messenger.util;
+package MCHerald.util;
 
-import messenger.MCHerald;
-import messenger.ping.ServerPing;
-import messenger.ping.StatusResponse;
+import MCHerald.MCHerald;
+import MCHerald.ping.ServerPing;
+import MCHerald.ping.StatusResponse;
 
 import java.awt.*;
 import java.io.Serializable;
