@@ -63,7 +63,7 @@ public class Language {
         public static final String DELETE = "Delete";
         public static final String ABOUT = "About";
         public static final String TITLE = "Servers Settings";
-        public static final String[] COLUMN_NAMES = {"Notifications", "Name", "Host / IP", "Frequency (Minutes)", "Online"};
+        public static final String[] COLUMN_NAMES = {"Notifications", "Name", "Host / IP", "Frequency (Minutes)", "Online", "UUID"};
         public static final String PLAYER_COUNT_ERROR = "?? / ??";
     }
 

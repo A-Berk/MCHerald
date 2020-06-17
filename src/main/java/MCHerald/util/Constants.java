@@ -11,6 +11,7 @@ public class Constants {
 
     public static final ServerInfo ERROR = new ServerInfo.ServerDummy();
     public static final Font APP_FONT = new Font("Serif", Font.PLAIN, 14);
+    public static final int SERVER_TIMEOUT = 7000;
 
     public static final class COLUMNS {
         public static final int NOTIFICATION_STATUS = 0;
@@ -18,6 +19,7 @@ public class Constants {
         public static final int IP = 2;
         public static final int FREQUENCY = 3;
         public static final int ONLINE_OUT_OF_MAX = 4;
+        public static final int UUID = 5;
     }
     public static final int DEFAULT_FREQUENCY = 30;
     public static final int MC_PORT = 25565;

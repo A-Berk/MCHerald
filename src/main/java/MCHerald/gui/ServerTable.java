@@ -69,7 +69,8 @@ public class ServerTable extends JFrame implements GUI {
 
         deleteButton.addActionListener(e -> {
             if(table.getSelectedRow()[Constants.COLUMNS.NAME] != null)
-                herald.deleteServer(table.getSelectedRow()[Constants.COLUMNS.NAME].toString());
+                //herald.deleteServer(table.getSelectedRow()[Constants.COLUMNS.UUID].toString());
+                herald.deleteServer(table.getSelectedRow()[Constants.COLUMNS.UUID].toString());
         });
 
         addButton.addActionListener(e ->herald.openAddServerMenu());
@@ -144,9 +145,13 @@ public class ServerTable extends JFrame implements GUI {
             table.addPropertyChangeListener(e -> {
                 if (e.getPropertyName().equals("tableCellEditor")){
                     if (!table.isEditing()){
-                        // Can't look up by name, it might change. Temp fix, TODO Get edited ServerInfo via what?
+                        // Can't look up by name, it might change. Temp fix, TODO Get edited ServerInfo via (what =? UUID)?
+                        System.out.println(table.getModel().getValueAt(table.getSelectedRow(), Constants.COLUMNS.UUID).toString());
+                        System.out.println(table.getSelectedColumn());
+                        System.out.println(table.getModel().getValueAt(table.getSelectedRow(), table.getSelectedColumn()).toString());
                         herald.editServer(
-                                ((ServerInfo) herald.getServerList().values().toArray()[table.getSelectedRow()]).getName(),
+                                //((ServerInfo) herald.getServerList().values().toArray()[table.getSelectedRow()]).getName(),
+                                table.getModel().getValueAt(table.getSelectedRow(), Constants.COLUMNS.UUID).toString(),
                                 table.getSelectedColumn(),
                                 table.getModel().getValueAt(table.getSelectedRow(), table.getSelectedColumn()).toString()
                         );
@@ -177,7 +182,7 @@ public class ServerTable extends JFrame implements GUI {
                 selectedRow = new Object[Language.TABLE.COLUMN_NAMES.length];
                 for (int i = 0; i < selectedRow.length; i++) {
                     if(table.getSelectedRow() >= 0)
-                        selectedRow[i] = table.getValueAt(table.getSelectedRow(), i);
+                        selectedRow[i] = table.getModel().getValueAt(table.getSelectedRow(), i);
                 }
                 if(table.getSelectedRow() > -1 && !table.isEditing()){
                     deleteButton.setEnabled(true);
@@ -185,6 +190,7 @@ public class ServerTable extends JFrame implements GUI {
                     deleteButton.setEnabled(false);
                 }
             });
+            table.removeColumn(table.getColumnModel().getColumn(Constants.COLUMNS.UUID)); // Hide the UUID column
 
             this.setPreferredSize(new Dimension(600, 250));
             resizeTable(table);
@@ -198,22 +204,35 @@ public class ServerTable extends JFrame implements GUI {
         }
 
         void update() {
-            Object[][] tableData = new Object[herald.getServerList().size()][Language.TABLE.COLUMN_NAMES.length];
-            int i = 0;
-            for(ServerInfo server : herald.getServerList().values())
-                tableData[i++] = server.getServerData();
+            try{
+                int numberOfServers = herald.getServerList().size();
+                Object[][] tableData = new Object[numberOfServers][Language.TABLE.COLUMN_NAMES.length];
+                int i = 0;
+                //TODO: java.util.ConcurrentModificationException still here !
+                for(ServerInfo server : herald.getServerList().values())
+                    tableData[i++] = server.getServerData();
 
-            model.setDataVector(tableData, Language.TABLE.COLUMN_NAMES);
-            resizeTable(table);
+                if(numberOfServers != herald.getServerList().size()){
+                    // Yeah, still temp fix, still can add & removed...
+                    // relying on eventual-consistency for now...
+                    return; // Will eventually get called again when a server isn't added? or just do it anyways?
+                }
+
+                model.setDataVector(tableData, Language.TABLE.COLUMN_NAMES);
+                table.removeColumn(table.getColumnModel().getColumn(Constants.COLUMNS.UUID)); // Hide the UUID column
+                resizeTable(table);
+            } catch (IndexOutOfBoundsException e){
+                e.printStackTrace();
+            }
         }
 
         private void resizeTable(JTable table) {
             SwingUtilities.invokeLater(()->{
-                table.getColumnModel().getColumn(0).setPreferredWidth(15);
-                table.getColumnModel().getColumn(1).setPreferredWidth(100);
-                table.getColumnModel().getColumn(2).setPreferredWidth(100);
-                table.getColumnModel().getColumn(3).setPreferredWidth(50);
-                table.getColumnModel().getColumn(4).setPreferredWidth(15);
+                table.getColumnModel().getColumn(Constants.COLUMNS.NOTIFICATION_STATUS).setPreferredWidth(15);
+                table.getColumnModel().getColumn(Constants.COLUMNS.NAME).setPreferredWidth(100);
+                table.getColumnModel().getColumn(Constants.COLUMNS.IP).setPreferredWidth(100);
+                table.getColumnModel().getColumn(Constants.COLUMNS.FREQUENCY).setPreferredWidth(50);
+                table.getColumnModel().getColumn(Constants.COLUMNS.ONLINE_OUT_OF_MAX).setPreferredWidth(15);
             });
         }
     }

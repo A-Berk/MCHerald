@@ -13,7 +13,7 @@ import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class SystemTrayMenu implements GUI {
@@ -23,6 +23,7 @@ public class SystemTrayMenu implements GUI {
 
     private final SystemTray tray;
     private final TrayIcon trayIcon;
+    private final HashMap<String, ServerMenuItem> serversMenuItem;
 
     public SystemTrayMenu(MCHerald herald, LinkedHashMap<String, ServerInfo> servers) throws FileNotFoundException {
         if (!SystemTray.isSupported()) throw new UnsupportedOperationException(Language.TRAY.UNSUPPORTED);
@@ -49,11 +50,11 @@ public class SystemTrayMenu implements GUI {
         // Create a popup menu components
         CheckboxMenuItem notify = new CheckboxMenuItem(Language.TRAY.NOTIFICATIONS);
         serversMenu = new Menu(Language.TRAY.SERVERS_LIST);
-        ArrayList<CheckboxMenuItem> serversMenuItem = new ArrayList<>();
+        serversMenuItem = new HashMap<>();
         for (ServerInfo s : servers.values()) {
-            CheckboxMenuItem i = new CheckboxMenuItem(s.getName());
+            ServerMenuItem i = new ServerMenuItem(s.getName(), s.getUUID());
             i.setState(s.getState());
-            serversMenuItem.add(i);
+            serversMenuItem.put(s.getUUID(), i);
         }
         MenuItem addServerItem = new MenuItem(Language.ADD_SERVER.TITLE);
         MenuItem settingsItem = new MenuItem(Language.TRAY.SERVER_TABLE);
@@ -65,7 +66,7 @@ public class SystemTrayMenu implements GUI {
         popup.addSeparator();
         popup.add(serversMenu);
         if (serversMenuItem.size() > 0) {
-            serversMenuItem.forEach(serversMenu::add);
+            serversMenuItem.values().forEach(serversMenu::add);
             serversMenu.addSeparator();
         }
         serversMenu.add(addServerItem);
@@ -81,7 +82,7 @@ public class SystemTrayMenu implements GUI {
         exitItem.addActionListener(e -> herald.shutdown());
         addServerItem.addActionListener(e -> herald.openAddServerMenu());
 
-        for (CheckboxMenuItem i : serversMenuItem) {
+        for (CheckboxMenuItem i : serversMenuItem.values()) {
             i.addItemListener(new ServerToggle());
         }
 
@@ -105,7 +106,7 @@ public class SystemTrayMenu implements GUI {
     }
 
     public void addWatched(ServerInfo server){
-        CheckboxMenuItem serverItem = new CheckboxMenuItem(server.getName());
+        ServerMenuItem serverItem = new ServerMenuItem(server.getName(), server.getUUID());
         serverItem.setState(server.getState());
         // if the only item is "Add Server", ie no servers
         if(serversMenu.getItemCount() == 1){
@@ -115,19 +116,20 @@ public class SystemTrayMenu implements GUI {
             serversMenu.insert(serverItem, serversMenu.getItemCount()-2);
         }
         serverItem.addItemListener(new ServerToggle());
+        serversMenuItem.put(server.getUUID(), serverItem);
     }
 
-    public void updateWatchedName(String oldName, String newName){
-        serversMenu.getItem(getMenuItem(oldName)).setLabel(newName);
+    public void updateWatchedName(String uuid, String newName){
+        serversMenuItem.get(uuid).setLabel(newName);
     }
 
-    public void toggleWatched(String serverName){
-        CheckboxMenuItem item = ((CheckboxMenuItem) serversMenu.getItem(getMenuItem(serverName)));
+    public void toggleWatched(String uuid){
+        CheckboxMenuItem item = serversMenuItem.get(uuid);
         item.setState(!item.getState());
     }
 
-    public void removeWatched(String serverName){
-        serversMenu.remove(getMenuItem(serverName));
+    public void removeWatched(String uuid){
+        serversMenu.remove(getMenuItemIndex(uuid));
         // if the only item is "Add Server" and the separator, ie no servers
         if(serversMenu.getItemCount() == 2){
             serversMenu.remove(0);
@@ -136,9 +138,10 @@ public class SystemTrayMenu implements GUI {
 
     /* Private Methods */
 
-    private int getMenuItem(String name){
+    private int getMenuItemIndex(String uuid){
+        CheckboxMenuItem item = serversMenuItem.get(uuid);
         for(int i = 0; i < serversMenu.getItemCount(); i++){
-            if(serversMenu.getItem(i).getLabel().equals(name)) return i;
+            if(item.equals(serversMenu.getItem(i))) return i;
         }
         return -1;
     }
@@ -149,6 +152,19 @@ public class SystemTrayMenu implements GUI {
         @Override
         public void itemStateChanged(ItemEvent e) {
             herald.toggleServerNotifications(((CheckboxMenuItem) e.getSource()).getLabel());
+        }
+    }
+
+    // Adds a uuid to the CheckboxMenuItem to identify the server.
+    private static class ServerMenuItem extends CheckboxMenuItem {
+        private final String UUID;
+        ServerMenuItem(String name, String uuid){
+            super(name);
+            this.UUID = uuid;
+        }
+
+        public String getUUID(){
+            return this.UUID;
         }
     }
 

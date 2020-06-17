@@ -7,17 +7,19 @@ import MCHerald.ping.StatusResponse;
 import java.awt.*;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.*;
+import java.util.StringJoiner;
 
-public class ServerInfo implements Serializable, Shuttable {
+public class ServerInfo implements Serializable {
     private String host, name;
     private boolean state;
     private int frequency;
+    private final String UUID;
 
     private transient StatusResponse lastResponse;
     private transient ServerPing serverPinger;
-    private transient Timer timer;
     private transient MCHerald herald;
 
     /* Constructors */
@@ -27,11 +29,15 @@ public class ServerInfo implements Serializable, Shuttable {
         this.state = state;
         this.lastResponse = null;
         this.herald = herald;
+        this.UUID = herald.requestUUID();
         this.serverPinger = new ServerPing(new InetSocketAddress(host, Constants.MC_PORT));
         this.setFrequency(frequencyMinutes);
+        new Thread(this::refresh).start();
     }
 
-    private ServerInfo(){}
+    private ServerInfo(){
+        this.UUID = "dummy";
+    }
     static class ServerDummy extends ServerInfo {ServerDummy() {}}
 
     /* Public Methods */
@@ -41,14 +47,16 @@ public class ServerInfo implements Serializable, Shuttable {
         serverData[Constants.COLUMNS.NOTIFICATION_STATUS] = getState();
         serverData[Constants.COLUMNS.NAME] = getName();
         serverData[Constants.COLUMNS.IP] = getHost();
-        serverData[Constants.COLUMNS.FREQUENCY] = getFrequency()/60/1000;
+        serverData[Constants.COLUMNS.FREQUENCY] = getFrequency();///60/1000;
         if(lastResponse != null)
             serverData[Constants.COLUMNS.ONLINE_OUT_OF_MAX] = lastResponse.getPlayers().getOnline() + "/" + lastResponse.getPlayers().getMax();
         else
             serverData[Constants.COLUMNS.ONLINE_OUT_OF_MAX] = Language.TABLE.PLAYER_COUNT_ERROR;
+        serverData[Constants.COLUMNS.UUID] = getUUID();
         return serverData;
     }
 
+    // Refresh BLOCKs calling thread until time-out or response
     public void refresh(){
         try {
             lastResponse = serverPinger.fetchData();
@@ -79,7 +87,7 @@ public class ServerInfo implements Serializable, Shuttable {
 
     public void setFrequency(int frequencyMinutes){
         if(frequencyMinutes < 1) this.frequency = Constants.DEFAULT_FREQUENCY;
-        this.frequency = frequencyMinutes * 60 * 1_000;
+        this.frequency = frequencyMinutes;// * 60 * 1_000;
         //if(this.timer != null) this.timer.cancel();
         //this.timer = new Timer(("Server: "+name), true);
         //this.timer.scheduleAtFixedRate(new RefreshTask(), frequency, frequency);
@@ -94,9 +102,13 @@ public class ServerInfo implements Serializable, Shuttable {
         this.state = !this.state;
     }
 
+    public String getUUID(){
+        return this.UUID;
+    }
+
     /* Private Methods */
 
-    private class RefreshTask extends TimerTask {
+    /*private class RefreshTask extends TimerTask {
         @Override
         public void run() {
             System.out.println(ServerInfo.this.name+" Running task.");
@@ -191,10 +203,10 @@ public class ServerInfo implements Serializable, Shuttable {
             }
             herald.updateServerTable();
         }
-    }
+    }*/
 
-    public void sendNotification(){
-        System.out.println(ServerInfo.this.name+" Running task.");
+    public void doUpdateTask(){
+        System.out.println(ServerInfo.this.name+" Running refresh task.");
         StatusResponse lastResponse = ServerInfo.this.lastResponse;
         refresh();
         StatusResponse thisResponse = ServerInfo.this.lastResponse;
@@ -203,7 +215,7 @@ public class ServerInfo implements Serializable, Shuttable {
             // if last query failed, update, no notify
             if(lastResponse == null) {
                 System.out.println(ServerInfo.this.name+" last query failed, update, no notify");
-                herald.updateServerTable();
+                //herald.updateServerTable();
                 return;
             }
 
@@ -219,7 +231,7 @@ public class ServerInfo implements Serializable, Shuttable {
             // if no players on last query, empty list, continue
             if(lastPlayers == null){
                 System.out.println(ServerInfo.this.name+" no players on last query, empty list, continue");
-                herald.updateServerTable();
+                //herald.updateServerTable();
                 lastPlayers = new ArrayList<>();
                 //return;
             }
@@ -227,7 +239,7 @@ public class ServerInfo implements Serializable, Shuttable {
             // if no players on this query, do nothing
             if(thisPlayers == null) {
                 System.out.println(ServerInfo.this.name+" no players on this query, update");
-                herald.updateServerTable();
+                //herald.updateServerTable();
                 return;
             }
 
@@ -277,23 +289,23 @@ public class ServerInfo implements Serializable, Shuttable {
             // if the count differs, provide "[c] / [t] players are online"
             else if(thisPlayerCount > 2 || lastCount - thisCount != 0){
                 System.out.println(ServerInfo.this.name+" 3 or more players OR the count differs, provide \"[c] / [t] players are online\"");
-                messageText.append(ServerInfo.this.lastResponse.getPlayers().getOnline());
-                messageText.append("/");
-                messageText.append(ServerInfo.this.lastResponse.getPlayers().getMax());
+                StringBuilder prefix = new StringBuilder();
+                prefix.append(ServerInfo.this.lastResponse.getPlayers().getOnline());
+                prefix.append("/");
+                prefix.append(ServerInfo.this.lastResponse.getPlayers().getMax());
+                messageText.append(String.format(Language.SERVER.NOTIFICATION_LARGE_FORMAT, prefix));
             }
             System.out.println(ServerInfo.this.name+" Sending Notification.");
-            herald.sendNotification(name, String.format(Language.SERVER.NOTIFICATION_LARGE_FORMAT, messageText), TrayIcon.MessageType.NONE);
+            herald.sendNotification(new Notification(
+                    name,
+                    messageText.toString(),
+                    TrayIcon.MessageType.NONE
+            ));
         }
-        herald.updateServerTable();
+        //herald.updateServerTable();
     }
 
     /* Contract Methods */
-
-    @Override
-    public void shutdown(){
-        timer.cancel();
-        timer.purge();
-    }
 
     @Override
     public String toString() {
